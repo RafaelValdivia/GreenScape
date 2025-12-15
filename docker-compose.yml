@@ -9,18 +9,28 @@ services:
       MYSQL_USER: greenscape_user
       MYSQL_PASSWORD: greenscape_pass
     ports:
-      - "3306:3306"
+      - "3307:3307"
     networks:
       - greenscape_project
     volumes:
       - mysql_data:/var/lib/mysql
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "root",
+          "-p$$MYSQL_ROOT_PASSWORD",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 30s  # Added startup grace period
+      start_period: 30s # Added startup grace period
 
   mongodb:
     image: mongo:7.0
@@ -36,7 +46,7 @@ services:
       - mongo_data:/data/db
     networks:
       - greenscape_project
-    healthcheck:  # Added healthcheck for MongoDB
+    healthcheck: # Added healthcheck for MongoDB
       test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/GreenScape --quiet
       interval: 10s
       timeout: 5s
@@ -44,28 +54,37 @@ services:
       start_period: 30s
 
   neo4j:
-    image: neo4j:latest  # Use community edition if you don't have enterprise license
+    image: neo4j:latest # Use community edition if you don't have enterprise license
     container_name: greenscape_neo4j
     restart: unless-stopped
     environment:
-      NEO4J_AUTH: neo4j/neo4j_password  # CHANGE THIS IN PRODUCTION!
-      NEO4J_ACCEPT_LICENSE_AGREEMENT: "yes"  # Only for enterprise edition
+      NEO4J_AUTH: neo4j/neo4j_password # CHANGE THIS IN PRODUCTION!
+      NEO4J_ACCEPT_LICENSE_AGREEMENT: "yes" # Only for enterprise edition
       NEO4J_server_memory_pagecache_size: "1G"
       NEO4J_server_memory_heap_initial__size: "2G"
       NEO4J_server_memory_heap_max__size: "4G"
     ports:
-      - "7474:7474"  # HTTP web interface
-      - "7687:7687"  # Bolt protocol
+      - "7474:7474" # HTTP web interface
+      - "7687:7687" # Bolt protocol
     networks:
       - greenscape_project
     volumes:
       - neo4j_data:/data
     healthcheck:
-      test: ["CMD", "cypher-shell", "-u", "neo4j", "-p", "neo4j_password", "RETURN 1"]
+      test:
+        [
+          "CMD",
+          "cypher-shell",
+          "-u",
+          "neo4j",
+          "-p",
+          "neo4j_password",
+          "RETURN 1",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 60s  # Neo4j needs longer startup time
+      start_period: 60s # Neo4j needs longer startup time
 
 volumes:
   mysql_data:
