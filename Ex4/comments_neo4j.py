@@ -1,22 +1,61 @@
 import datetime
+from ast import USub
 
+import mysql.connector as mq
 from neo4j import GraphDatabase
 
 
 class Neo4jCommentSystem:
-    def __init__(self, uri, user, password, mysql_db_connection):
+    def __init__(self, uri, user, password, mysql_db_connection=None):
         self.driver = GraphDatabase.driver(uri, auth=(user, password))
-        self.migrate()
+        if mysql_db_connection is not None:
+            self.migrate(mysql_db_connection)
 
-    def migrate():
-        c
+    def migrate(self, db_connection):
+        connection = mq.connect(**db_connection)
+        cursor = connection.cursor()
+        cursor.execute("SELECT IDU FROM Usuario U")
+        usuarios = cursor.fetchall()
+        cursor.execute("SELECT IDPub FROM Publicacion P")
+        publicaciones = cursor.fetchall()
+        cursor.execute("SELECT IDU, IDPub, Comentario FROM Comentar")
+        comentarios = cursor.fetchall()
+        for usuario in usuarios:
+            self.add_user(usuario[0])
+        for publicacion in publicaciones:
+            self.add_publication(publicacion[0])
+        for comentario in comentarios:
+            print(comentario)
+            self.add_comment(comentario[0], comentario[1], comentario[2])
+
+    def clear_database(self):
+        with self.driver.session() as session:
+            session.run("MATCH (n) DETACH DELETE n")
+            print("Base de datos limpiada")
 
     def close(self):
         self.driver.close()
 
-    def create_comment(self, user_id, publication_id, text, parent_comment_id=None):
+    def add_user(self, user_id):
+        with self.driver.session() as session:
+            query = """
+            CREATE (u:Usuario {id: $user_id})
+            """
+            params = {"user_id": user_id}
+            session.run(query, params)
+
+    def add_publication(self, pub_id):
+        with self.driver.session() as session:
+            query = """
+            CREATE (p:Publicatcon {id: $pub_id})
+            """
+            params = {"pub_id": pub_id}
+            session.run(query, params)
+
+    def add_comment(self, user_id, publication_id, text, parent_comment_id=None):
         """Crear un nuevo comentario, opcionalmente como respuesta a otro"""
         with self.driver.session() as session:
+            comment_id = self._get_next_comment_id()
             query = """
             MATCH (u:Usuario {id: $user_id})
             MATCH (p:Publicacion {id: $publication_id})
@@ -33,7 +72,7 @@ class Neo4jCommentSystem:
                 "user_id": user_id,
                 "publication_id": publication_id,
                 "text": text,
-                "comment_id": self._get_next_comment_id(),
+                "comment_id": comment_id,
             }
 
             session.run(query, params)
@@ -87,80 +126,39 @@ class Neo4jCommentSystem:
         """Obtener el siguiente ID disponible para comentario"""
         with self.driver.session() as session:
             result = session.run("""
-            MATCH (c:Comentario)
+            OPTIONAL MATCH (c:Comentario)
             RETURN MAX(c.id) as max_id
             """)
             record = result.single()
-            return (record["max_id"] or 0) + 1
-
-
-# Ejemplo de uso
-def test_neo4j_implementation():
-    # Configurar conexión
-    comment_system = Neo4jCommentSystem("bolt://localhost:7687", "neo4j", "password")
-
-    # Crear comentarios de prueba (simulando los mismos que en MySQL)
-    print("Creando comentarios de prueba...")
-
-    # Comentario raíz
-    comment_system.create_comment(
-        user_id=8,
-        publication_id=24,
-        text="¡Qué interesante publicación sobre plantas! Me encantó ver cómo cuidar las suculentas.",
-    )
-
-    # Obtener ID del comentario raíz (asumimos que es 1)
-    root_comment_id = 1
-
-    # Crear respuestas (simulando el hilo de 25 comentarios)
-    responses = [
-        (
-            35,
-            24,
-            "Totalmente de acuerdo. Yo tengo varias suculentas en casa, ¿algún consejo específico?",
-            root_comment_id,
-        ),
-        (
-            8,
-            24,
-            "Lo más importante es el riego. Solo riega cuando la tierra esté completamente seca.",
-            2,
-        ),
-        (19, 24, "¿Cada cuánto tiempo recomiendas regar en invierno?", 3),
-        # ... continuar con más respuestas
-    ]
-
-    for user_id, pub_id, text, parent_id in responses:
-        comment_system.create_comment(user_id, pub_id, text, parent_id)
-
-    # Obtener conversación completa
-    print("\nObteniendo conversación completa...")
-    conversation = comment_system.get_full_conversation(root_comment_id)
-
-    if conversation:
-        print(f"\nConversación a partir del comentario {conversation['id_inicial']}:")
-        print(f"Autor: {conversation['autor_inicial']}")
-        print(f"Texto: {conversation['texto_inicial']}")
-        print(f"\nRespuestas ({len(conversation['todas_respuestas'])}):")
-
-        for resp in conversation["todas_respuestas"]:
-            indent = "  " * resp["nivel"]
-            print(f"{indent}Nivel {resp['nivel']}: {resp['autor']} - {resp['texto']}")
-
-    # Obtener como árbol jerárquico
-    print("\n\nObteniendo árbol jerárquico de conversación...")
-    tree = comment_system.get_conversation_tree(root_comment_id)
-
-    if tree:
-        print(f"Total comentarios en el árbol: {tree['total_comentarios']}")
-        for comment in tree["conversacion_completa"]:
-            print(
-                f"ID: {comment['id']}, Autor: {comment['autor']}, Fecha: {comment['fecha']}"
-            )
-
-    comment_system.close()
+            if record is None or record["max_id"] is None:
+                return 1
+            return record["max_id"]
 
 
 # Ejecutar prueba
 if __name__ == "__main__":
-    test_neo4j_implementation()
+    connections = {
+        "mysql": {
+            "host": "localhost",
+            "user": "greenscape_user",
+            "password": "greenscape_pass",
+            "database": "GreenScape",
+            "port": 3306,
+        },
+        "mongodb": {
+            "uri": "mongodb://root:mongo_pass@localhost:27017/GreenScape?authSource=admin",
+            "database": "GreenScape",
+        },
+        "neo4j": {
+            "uri": "bolt://localhost:7687",
+            "user": "neo4j",
+            "password": "neo4j_password",
+        },
+    }
+    neo4j_conn = connections["neo4j"]
+    uri = neo4j_conn["uri"]
+    user = neo4j_conn["user"]
+    pswd = neo4j_conn["password"]
+    neo4j_comments = Neo4jCommentSystem(uri, user, pswd, connections["mysql"])
+    # neo4j_comments.clear_database()
+    # print(neo4j_comments._get_next_comment_id())

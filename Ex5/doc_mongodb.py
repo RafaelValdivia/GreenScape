@@ -10,7 +10,8 @@ from pymongo import MongoClient
 
 class MongoDBPlantDocumentSystem:
     def __init__(
-        self, mongo_uri="mongodb://localhost:27017/", db_name="greenscape_docs"
+        self, mongo_uri="mongodb://localhost:27017/", db_name="greenscape_docs",
+        mysql_db_connection
     ):
         self.client = MongoClient(mongo_uri)
         self.db = self.client[db_name]
