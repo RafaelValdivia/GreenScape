@@ -63,14 +63,34 @@ class MySqlCommentSystem:
             """
         cursor.execute(query, (comment_id,))
         parent = cursor.fetchone()
-        return parent[0]
+        connection.close()
+        if parent:
+            return parent[0]
+        return None
 
     def get_children(self, comment_id):
         connection = self.get_db_connection()
-        cursor = connection.cursor()
+        cursor = connection.cursor(dictionary=True)
         query = """
-            FROM ComentarRec cr1 LEFT JOIN ComentarRec cr2 WHERE cr1.IDU == cr2.
+            SELECT IDComentario, IDU, IDPub, Texto, IDPadre, FechaCreacion
+            FROM ComentarRec
+            WHERE IDPadre = %s
             """
         cursor.execute(query, (comment_id,))
-        parent = cursor.fetchone()
-        return parent[0]
+        children = cursor.fetchall()
+        connection.close()
+        return children
+
+    def get_next_comment_id(self):
+        connection = self.get_db_connection()
+        cursor = connection.cursor()
+        query = """
+            SELECT MAX(cr.IDComentario)
+            FROM ComentarRec cr
+            """
+        cursor.execute(query)
+        max_id = cursor.fetchone()
+        connection.close()
+        if max_id and max_id[0] is not None:
+            return max_id[0] + 1
+        return 1

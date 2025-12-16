@@ -64,7 +64,6 @@ class Neo4jCommentSystem:
                     autor: [(respuestas)<-[:ESCRIBIO]-(autor:Usuario) | autor.nombre][0],
                     fecha: respuestas.fechaCreacion
                 }) as todas_respuestas
-            ORDER BY nivel
             """
 
             result = session.run(query, {"comment_id": comment_id})

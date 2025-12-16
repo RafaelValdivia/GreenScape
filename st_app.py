@@ -12,6 +12,7 @@ import streamlit as st
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
+from Ex3.mysql_queries import queries
 from Ex4.comments_neo4j import Neo4jCommentSystem
 from Ex5.doc_mongodb import MongoDBPlantDocumentSystem
 
@@ -102,77 +103,14 @@ def execute_query(cursor, query):
 def render_query_section():
     st.header("Selector de Consultas SQL")
 
-    general_queries = {
-        "a) Listar productos": "SELECT * FROM Producto",
-        "b) Reacciones por publicación": """
-            SELECT p.IDPub, u.Nombre, COUNT(r.IDU) as Total_Reacciones
-            FROM Publicacion p
-            JOIN Usuario u ON p.IDU = u.IDU
-            LEFT JOIN Reaccionar r ON p.IDPub = r.IDPub
-            GROUP BY p.IDPub, u.Nombre
-            ORDER BY Total_Reacciones DESC
-        """,
-        "c) Plantas preferidas": """
-            SELECT p.NombreComun, COUNT(g.IDU) as Total_Likes
-            FROM Planta p
-            JOIN Gustar g ON p.IDProd = g.IDProd
-            GROUP BY p.IDProd, p.NombreComun
-            ORDER BY Total_Likes DESC
-            LIMIT 3
-        """,
-        "d) Usuarios activos": """
-            SELECT u.IDU, u.Nombre, u.Email,
-                   MAX(GREATEST(COALESCE(r.Fecha, '1000-01-01'),
-                                COALESCE(c.Fecha, '1000-01-01'))) as Ultima_Actividad
-            FROM Usuario u
-            LEFT JOIN Reaccionar r ON u.IDU = r.IDU
-                AND r.Fecha >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
-            LEFT JOIN Contribucion c ON u.IDU = c.IDU
-                AND c.Fecha >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
-            GROUP BY u.IDU, u.Nombre, u.Email
-        """,
-        "e) Publicaciones populares": """
-            SELECT p.IDPub, u.Nombre, p.Texto,
-                   SUM(CASE WHEN r.Tipo IN ('Me gusta','Me encanta','Me asombra','Me divierte') THEN 1 ELSE 0 END) as Positivas,
-                   SUM(CASE WHEN r.Tipo IN ('Me enoja','Me entristece') THEN 1 ELSE 0 END) as Negativas
-            FROM Publicacion p
-            JOIN Usuario u ON p.IDU = u.IDU
-            LEFT JOIN Reaccionar r ON p.IDPub = r.IDPub
-            GROUP BY p.IDPub, u.Nombre, p.Texto
-            HAVING Positivas > Negativas
-        """,
-        "h) Distribución edades": """
-            SELECT
-                CASE
-                    WHEN TIMESTAMPDIFF(YEAR, FechaDeNacimiento, CURDATE()) BETWEEN 11 AND 20 THEN '11-20'
-                    WHEN TIMESTAMPDIFF(YEAR, FechaDeNacimiento, CURDATE()) BETWEEN 21 AND 30 THEN '21-30'
-                    WHEN TIMESTAMPDIFF(YEAR, FechaDeNacimiento, CURDATE()) BETWEEN 31 AND 40 THEN '31-40'
-                    WHEN TIMESTAMPDIFF(YEAR, FechaDeNacimiento, CURDATE()) BETWEEN 41 AND 50 THEN '41-50'
-                    WHEN TIMESTAMPDIFF(YEAR, FechaDeNacimiento, CURDATE()) BETWEEN 51 AND 60 THEN '51-60'
-                    WHEN TIMESTAMPDIFF(YEAR, FechaDeNacimiento, CURDATE()) BETWEEN 61 AND 70 THEN '61-70'
-                    WHEN TIMESTAMPDIFF(YEAR, FechaDeNacimiento, CURDATE()) BETWEEN 71 AND 80 THEN '71-80'
-                    WHEN TIMESTAMPDIFF(YEAR, FechaDeNacimiento, CURDATE()) BETWEEN 81 AND 90 THEN '81-90'
-                    WHEN TIMESTAMPDIFF(YEAR, FechaDeNacimiento, CURDATE()) BETWEEN 91 AND 100 THEN '91-100'
-                    ELSE 'Otros'
-                END as Rango_Edad,
-                COUNT(*) as Cantidad,
-                ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM Usuario), 2) as Porcentaje
-            FROM Usuario
-            GROUP BY Rango_Edad
-            ORDER BY Rango_Edad
-        """,
-    }
-
     special_queries_tabs = ["Consulta Ñ", "Consulta O", "Consulta P", "Consulta Q"]
     selected_tab = st.selectbox(
         "Selecciona tipo de consulta:", ["Generales"] + special_queries_tabs
     )
 
     if selected_tab == "Generales":
-        selected_query = st.selectbox(
-            "Selecciona una consulta:", list(general_queries.keys())
-        )
-        query_text = general_queries[selected_query]
+        selected_query = st.selectbox("Selecciona una consulta:", list(queries.keys()))
+        query_text = queries[selected_query]
 
         st.code(query_text, language="sql")
 
