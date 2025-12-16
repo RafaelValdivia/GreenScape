@@ -9,7 +9,7 @@ services:
       MYSQL_USER: greenscape_user
       MYSQL_PASSWORD: greenscape_pass
     ports:
-      - "3307:3307"
+      - "3306:3306"
     networks:
       - greenscape_project
     volumes:

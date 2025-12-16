@@ -1,8 +1,18 @@
 {
-  "host": "localhost",
-  "port": 3307,
-  "user": "root",
-  "password": "root",
-  "database": "GreenScape",
-  "auth_plugin": "mysql_native_password"
+  "mysql": {
+    "host": "localhost",
+    "user": "greenscape_user",
+    "password": "greenscape_pass",
+    "database": "GreenScape",
+    "port": 3306
+  },
+  "mongodb": {
+    "uri": "mongodb://root:mongo_pass@localhost:27017/GreenScape?authSource=admin",
+    "database": "GreenScape"
+  },
+  "neo4j": {
+    "uri": "bolt://localhost:7687",
+    "user": "neo4j",
+    "password": "neo4j_password"
+  }
 }
