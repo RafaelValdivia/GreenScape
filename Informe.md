@@ -6,15 +6,15 @@ El proyecto GreenScape tuvo como objetivo la recuperación y mejora de una plata
 
 ## 2. Modelo Entidad-Relación Extendido
 
-Para el modelo entidad-relación se utilizó Excalidraw para su construcción, priorizando la claridad conceptual.
+Para el modelo entidad-relación se utilizó Excalidraw y luego draw.io para su construcción, priorizando la claridad conceptual.
 
 ## 3. Consultas SQL Analíticas
 
-Las consultas SQL implementadas siguieron un enfoque pragmático que balanceó complejidad y rendimiento. Se priorizó el uso de joins estratégicos sobre CTEs complejas, reservando estas últimas solo para casos donde la recursividad era estrictamente necesaria. Para análisis comparativos y rankings se emplearon funciones de ventana, mientras que las agregaciones condicionales con CASE permitieron diferenciar entre tipos de reacciones. Cada consulta fue optimizada considerando los volúmenes de datos y patrones de acceso, implementando índices apropiados en campos de filtrado frecuente.
+Las consultas SQL implementadas siguieron un enfoque pragmático que balanceó complejidad y rendimiento. Se priorizó el uso de joins estratégicos sobre CTEs complejas, reservando estas últimas solo para casos donde la recursividad era estrictamente necesaria.
 
 ## 4. Conversaciones en Comentarios
 
-La implementación de conversaciones jerárquicas en comentarios adoptó un modelo mixto que combina MySQL para datos transaccionales y Neo4j para relaciones sociales. Esta decisión se fundamentó en las fortalezas complementarias de ambas tecnologías: MySQL ofrece consistencia ACID para operaciones críticas, mientras que Neo4j proporciona rendimiento superior en traversales de grafos y consultas jerárquicas. Se optó por un modelo híbrido, el cual permite evolucionar gradualmente hacia arquitecturas más escalables sin comprometer la estabilidad del sistema existente.
+La implementación de conversaciones jerárquicas en comentarios adoptó un modelo mixto que combina MySQL para datos transaccionales y Neo4j para relaciones sociales. Esta decisión se fundamentó en las fortalezas complementarias de ambas tecnologías: MySQL ofrece consistencia ACID para operaciones críticas, mientras que Neo4j proporciona mejor rendimiento en recorrido de grafos y consultas jerárquicas. Este modelo permite evoluconar gradualmente sin comprometer la estabilidad del sistema existente.
 
 ## 5. Sistema de Documentación Jerárquica
 

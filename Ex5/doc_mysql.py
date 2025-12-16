@@ -1,3 +1,4 @@
+import json
 import mimetypes
 import os
 from datetime import datetime
@@ -30,7 +31,7 @@ class PlantDocumentSystem:
         if is_principal:
             target_dir = plant_dir / "principal"
             target_dir.mkdir(exist_ok=True)
-            for existing_file in target_dir.glob("*"):
+            for existing_file in target_dir.glob("*.json"):
                 existing_file.unlink()
         else:
             target_dir = plant_dir / "secundarios"
@@ -89,7 +90,11 @@ class PlantDocumentSystem:
         return document_id
 
     def create_main_document(
-        self, plant_id, file_content, filename, plant_data=None, mime_type=None
+        self,
+        plant_id,
+        file_content,
+        filename,
+        mime_type=None,
     ):
         json_mime_types = [
             "application/json",
@@ -125,12 +130,14 @@ class PlantDocumentSystem:
         tipo_documento,
         file_content,
         filename,
+        title=None,
         mime_type=None,
         parent_doc_id=None,
     ):
+        if not title:
+            title = filename
         if not mime_type:
             mime_type = self.detect_mime_type(filename)
-
         filepath = self.save_document_file(
             plant_id, file_content, filename, is_principal=False
         )
@@ -146,6 +153,14 @@ class PlantDocumentSystem:
             is_principal=False,
             parent_doc_id=parent_doc_id,
         )
+
+        plant_dir = self.get_plant_directory(plant_id)
+        prdoc_dir = plant_dir / "principal"
+        for doc in prdoc_dir.glob("*.json"):
+            with open(doc, "w") as file:
+                content = json.load(file)
+                content["secondary_documents"][title] = plant_dir / "secundarios"
+                json.dump(content, file, indent=4)
 
         return doc_id
 

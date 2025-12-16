@@ -69,22 +69,8 @@ class MySqlCommentSystem:
         connection = self.get_db_connection()
         cursor = connection.cursor()
         query = """
-
             FROM ComentarRec cr1 LEFT JOIN ComentarRec cr2 WHERE cr1.IDU == cr2.
-
             """
         cursor.execute(query, (comment_id,))
         parent = cursor.fetchone()
         return parent[0]
-
-
-if __name__ == "__main__":
-    from init import connection_dict as connd
-
-    Comments = MySqlCommentSystem(connd)
-    Comments.add_comment(27, 30, "sample", 39)
-    conn = mq.connect(**connd)
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM ComentarRec")
-    result = cursor.fetchall()
-    print(result)

@@ -1,13 +1,17 @@
+import json
+import mimetypes
+import os
+from datetime import datetime
+from pathlib import Path
+
 import pymongo
 from pymongo import MongoClient
-from datetime import datetime
-import os
-from pathlib import Path
-import mimetypes
-import json
+
 
 class MongoDBPlantDocumentSystem:
-    def __init__(self, mongo_uri="mongodb://localhost:27017/", db_name="greenscape_docs"):
+    def __init__(
+        self, mongo_uri="mongodb://localhost:27017/", db_name="greenscape_docs"
+    ):
         self.client = MongoClient(mongo_uri)
         self.db = self.client[db_name]
         self.documents = self.db.plant_documents
@@ -49,21 +53,23 @@ class MongoDBPlantDocumentSystem:
             "mime_type": mime_type,
             "tamano": file_size,
             "es_principal": True,
-            "documento_padre": None,
+            "documentos_secundarios": [],
             "fecha_creacion": datetime.now(),
             "fecha_actualizacion": datetime.now(),
-            "metadata": plant_data or {}
+            "metadata": plant_data or {},
         }
 
         result = self.documents.update_one(
             {"plant_id": plant_id, "es_principal": True},
             {"$set": main_doc},
-            upsert=True
+            upsert=True,
         )
 
         return self.documents.find_one({"plant_id": plant_id, "es_principal": True})
 
-    def insert_secondary_document(self, plant_id, tipo_documento, content, filename, parent_id=None, metadata=None):
+    def insert_secondary_document(
+        self, plant_id, tipo_documento, content, filename, parent_id=None, metadata=None
+    ):
         file_path = self.save_document_to_filesystem(plant_id, content, filename, False)
         file_size = os.path.getsize(file_path)
         mime_type = mimetypes.guess_type(filename)[0] or "application/octet-stream"
@@ -82,7 +88,7 @@ class MongoDBPlantDocumentSystem:
             "documento_padre": parent_doc_id,
             "fecha_creacion": datetime.now(),
             "fecha_actualizacion": datetime.now(),
-            "metadata": metadata or {}
+            "metadata": metadata or {},
         }
 
         result = self.documents.insert_one(secondary_doc)
@@ -98,7 +104,7 @@ class MongoDBPlantDocumentSystem:
             "size": doc["tamano"],
             "created": doc["fecha_creacion"],
             "updated": doc["fecha_actualizacion"],
-            "is_principal": doc.get("es_principal", False)
+            "is_principal": doc.get("es_principal", False),
         }
 
         if "metadata" in doc:
@@ -109,10 +115,10 @@ class MongoDBPlantDocumentSystem:
 
         return formatted
 
-    def get_plant_documents(self, plant_id):
+    def get_plant_documents(self, plant_id, piprincipal=None, secondary=None):
         pipeline = [
             {"$match": {"plant_id": plant_id}},
-            {"$sort": {"es_principal": -1, "tipo_documento": 1, "fecha_creacion": 1}}
+            {"$sort": {"es_principal": -1, "tipo_documento": 1, "fecha_creacion": 1}},
         ]
 
         docs = list(self.documents.aggregate(pipeline))
@@ -126,13 +132,22 @@ class MongoDBPlantDocumentSystem:
         result = {
             "plant_id": plant_id,
             "main_document": self.format_document(main_doc) if main_doc else None,
-            "secondary_documents": [self.format_document(d) for d in secondary_docs]
+            "secondary_documents": [self.format_document(d) for d in secondary_docs],
         }
 
         return result
 
-    def search_documents(self, plant_id=None, doc_type=None, filename=None, page=1, page_size=20
-                        sort_criteria="fecha_creacion", desc=True):
+    def search_documents(
+        self,
+        plant_id=None,
+        doc_type=None,
+        filename=None,
+        is_principal=None,
+        page=1,
+        page_size=20,
+        sort_criteria="fecha_creacion",
+        desc=True,
+    ):
         query = {}
         if plant_id:
             query["plant_id"] = plant_id
@@ -140,24 +155,29 @@ class MongoDBPlantDocumentSystem:
             query["tipo_documento"] = doc_type
         if filename:
             query["nombre_archivo"] = {"$regex": filename, "$options": "i"}
+        if is_principal is not None:
+            query["es_principal"] = is_principal
+
         skip = (page - 1) * page_size
-        cursor = self.documents.find(query).skip(skip).limit(page_size).sort(sort_criteria, -1 if desc else 1)
+        cursor = (
+            self.documents.find(query)
+            .skip(skip)
+            .limit(page_size)
+            .sort(sort_criteria, -1 if desc else 1)
+        )
         total = self.documents.count_documents(query)
         return {
             "results": [self.format_document(doc) for doc in cursor],
             "total": total,
             "page": page,
             "page_size": page_size,
-            "total_pages": (total + page_size - 1) // page_size
+            "total_pages": (total + page_size - 1) // page_size,
         }
 
     def update_document_metadata(self, document_id, metadata_updates):
         update_data = {
             "fecha_actualizacion": datetime.now(),
-            "metadata": metadata_updates
+            "metadata": metadata_updates,
         }
-        result = self.documents.update_one(
-            {"_id": document_id},
-            {"$set": update_data}
-        )
+        result = self.documents.update_one({"_id": document_id}, {"$set": update_data})
         return result.modified_count > 0
