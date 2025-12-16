@@ -4,8 +4,12 @@ from neo4j import GraphDatabase
 
 
 class Neo4jCommentSystem:
-    def __init__(self, uri, user, password):
+    def __init__(self, uri, user, password, mysql_db_connection):
         self.driver = GraphDatabase.driver(uri, auth=(user, password))
+        self.migrate()
+
+    def migrate():
+        c
 
     def close(self):
         self.driver.close()
@@ -53,41 +57,27 @@ class Neo4jCommentSystem:
             MATCH (inicial:Comentario {id: $comment_id})
             OPTIONAL MATCH path = (inicial)<-[:RESPONDE_A*]-(respuestas:Comentario)
             WITH inicial, respuestas, length(path) as nivel
+            WITH inicial,
+                    collect({
+                    respuesta: respuestas,
+                    nivel: nivel
+                    }) as respuestas_con_nivel
+            WITH inicial,
+                    [r in respuestas_con_nivel |
+                    {id: r.respuesta.id,
+                        texto: r.respuesta.texto,
+                        nivel: r.nivel,
+                        autor: [(r.respuesta)<-[:ESCRIBIO]-(autor:Usuario) | autor.nombre][0],
+                        fecha: r.respuesta.fechaCreacion
+                    }
+                    ] as respuestas_ordenadas
+            ORDER BY respuestas_ordenadas.nivel
             RETURN
                 inicial.id as id_inicial,
                 inicial.texto as texto_inicial,
                 [(inicial)<-[:ESCRIBIO]-(autor:Usuario) | autor.nombre][0] as autor_inicial,
-                collect({
-                    id: respuestas.id,
-                    texto: respuestas.texto,
-                    nivel: nivel,
-                    autor: [(respuestas)<-[:ESCRIBIO]-(autor:Usuario) | autor.nombre][0],
-                    fecha: respuestas.fechaCreacion
-                }) as todas_respuestas
-            """
-
-            result = session.run(query, {"comment_id": comment_id})
-            return result.single()
-
-    def get_conversation_tree(self, comment_id):
-        """Obtener la conversación como árbol jerárquico"""
-        with self.driver.session() as session:
-            query = """
-            MATCH (c:Comentario {id: $comment_id})
-            CALL apoc.path.subgraphAll(c, {
-                relationshipFilter: "<RESPONDE_A",
-                labelFilter: "Comentario",
-                maxLevel: 20
-            })
-            YIELD nodes, relationships
-            RETURN
-                [node in nodes | {
-                    id: node.id,
-                    texto: node.texto,
-                    autor: [(node)<-[:ESCRIBIO]-(u:Usuario) | u.nombre][0],
-                    fecha: node.fechaCreacion
-                }] as conversacion_completa,
-                size(nodes) as total_comentarios
+                inicial.fechaCreacion as fecha_inicial,
+                respuestas_ordenadas as todas_respuestas
             """
 
             result = session.run(query, {"comment_id": comment_id})
