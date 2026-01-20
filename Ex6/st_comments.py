@@ -28,7 +28,7 @@ def init_neo4j_from_streamlit():
 
 
 def display_comment_tree(conversation_data):
-    if not conversation_data.get("comments"):
+    if not conversation_data:
         st.info("No hay comentarios en esta publicación.")
         return
 
