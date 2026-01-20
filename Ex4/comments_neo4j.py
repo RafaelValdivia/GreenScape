@@ -70,7 +70,6 @@ class Neo4jCommentSystem:
 
         cursor.execute("SELECT DISTINCT IDPub FROM Publicacion")
         publicaciones = cursor.fetchall()
-        print(publicaciones)
 
         cursor.execute("""
                 SELECT DISTINCT

@@ -1,3 +1,4 @@
+import json
 import sys
 
 import mysql.connector as mq
@@ -8,23 +9,21 @@ sys.path.append("Ex4")
 from Ex4.comments_mysql import MySqlCommentSystem
 from Ex4.comments_neo4j import Neo4jCommentSystem
 
+with open("connection.json", "r") as connections:
+    file = json.load(connections)
+    neo4j_conn = file["neo4j"]
+    mysql_conn = file["mysql"]
+
 
 def init_neo4j_from_streamlit():
-    import json
-
-    with open("connection.json", "r") as connections:
-        file = json.load(connections)
-
-        try:
-            neo4j_system = Neo4jCommentSystem(
-                **file["neo4j"], mysql_db_connection=file["mysql"]
-            )
-            st.session_state.neo4j_system = neo4j_system
-            st.session_state.neo4j_connected = True
-            st.success("✅ Conexión exitosa a Neo4j")
-            st.rerun()
-        except Exception as e:
-            st.error(f"❌ Error de conexión: {str(e)}")
+    try:
+        neo4j_system = Neo4jCommentSystem(**neo4j_conn, mysql_db_connection=mysql_conn)
+        st.session_state.neo4j_system = neo4j_system
+        st.session_state.neo4j_connected = True
+        st.success("✅ Conexión exitosa a Neo4j")
+        st.rerun()
+    except Exception as e:
+        st.error(f"❌ Error de conexión: {str(e)}")
 
 
 def display_comment_tree(conversation_data):
@@ -65,6 +64,12 @@ def show_conversation_manager():
     if "neo4j_system" not in st.session_state:
         init_neo4j_from_streamlit()
     all_pubs = st.session_state.neo4j_system.get_all_publications()
+    # conn = mq.connect(**mysql_conn)
+    # cursor = conn.cursor()
+    # for i in range(len(all_pubs)):
+    #     cursor.execute("SELECT Texto FROM Publicacion WHERE IDPub = %s", (all_pubs[i],))
+    #     text = cursor.fetchone()
+    #     all_pubs[i] = f"{all_pubs} - {text}"
     current_pub = st.selectbox("Selecciona una Publicación", all_pubs)
     display_comment_tree(
         st.session_state.neo4j_system.get_full_conversation(current_pub)

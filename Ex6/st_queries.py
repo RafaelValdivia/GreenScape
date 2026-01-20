@@ -118,7 +118,11 @@ def handle_query_trigger_auditoria():
                 key="new_price_input",
             )
 
-        if st.button("💾 Actualizar Precio", key="update_price"):
+        if st.button(
+            "💾 Actualizar Precio",
+            key="update_price",
+            disabled=(current_price == new_price),
+        ):
             try:
                 cursor.execute(
                     "SELECT Precio FROM Producto WHERE IDProd = %s", (selected_id,)
@@ -136,17 +140,9 @@ def handle_query_trigger_auditoria():
                     (new_price, selected_id),
                 )
 
-                cursor.execute(
-                    """
-                    INSERT INTO Historial_Precios (IDProd, Precio_Anterior, Precio_Nuevo, Porcentaje_Cambio)
-                    VALUES (%s, %s, %s, %s)
-                """,
-                    (selected_id, old_price, new_price, percent_change),
-                )
-
                 conn.commit()
                 st.success(
-                    f"✅ Precio actualizado exitosamente de ${old_price:.2f} a ${new_price:.2f}"
+                    f"✅ Precio actualizado exitosamente de \${old_price:.2f} a \${new_price:.2f}"
                 )
 
                 st.markdown("### 📜 Historial de Cambios de Precio")
@@ -160,7 +156,6 @@ def handle_query_trigger_auditoria():
                     FROM Historial_Precios
                     WHERE IDProd = %s
                     ORDER BY Fecha_Cambio DESC
-                    LIMIT 10
                 """,
                     (selected_id,),
                 )
@@ -178,12 +173,6 @@ def handle_query_trigger_auditoria():
                     )
                     st.dataframe(df_historial, use_container_width=True)
 
-                    st.markdown("#### 📈 Evolución del Precio")
-                    if len(df_historial) > 0:
-                        chart_data = df_historial.sort_values("Fecha y Hora").copy()
-                        st.line_chart(
-                            chart_data.set_index("Fecha y Hora")["Precio Nuevo"]
-                        )
                 else:
                     st.info("No hay historial de cambios para este producto.")
 
@@ -191,47 +180,47 @@ def handle_query_trigger_auditoria():
                 st.error(f"❌ Error al actualizar el precio: {str(e)}")
 
         st.markdown("### 📊 Tabla Completa de Auditoría")
-        if st.checkbox("Mostrar tabla completa de auditoría"):
-            cursor.execute("""
-                SELECT
-                    hp.IDProd,
-                    p.Nombre AS Producto,
-                    hp.Precio_Anterior,
-                    hp.Precio_Nuevo,
-                    hp.Fecha_Cambio,
-                    hp.Porcentaje_Cambio
-                FROM Historial_Precios hp
-                JOIN Producto p ON hp.IDProd = p.IDProd
-                ORDER BY hp.Fecha_Cambio DESC
-                LIMIT 50
-            """)
 
-            audit_data = cursor.fetchall()
-            if audit_data:
-                df_audit = pd.DataFrame(
-                    audit_data,
-                    columns=[
-                        "ID Producto",
-                        "Producto",
-                        "Precio Anterior",
-                        "Precio Nuevo",
-                        "Fecha",
-                        "% Cambio",
-                    ],
-                )
-                st.dataframe(df_audit, use_container_width=True)
+        cursor.execute("""
+            SELECT
+                hp.IDProd,
+                p.Nombre AS Producto,
+                hp.Precio_Anterior,
+                hp.Precio_Nuevo,
+                hp.Fecha_Cambio,
+                hp.Porcentaje_Cambio
+            FROM Historial_Precios hp
+            JOIN Producto p ON hp.IDProd = p.IDProd
+            ORDER BY hp.Fecha_Cambio DESC
+            LIMIT 50
+        """)
 
-                if len(df_audit) > 0:
-                    col1, col2, col3 = st.columns(3)
-                    with col1:
-                        st.metric("Total de Cambios", len(audit_data))
-                    with col2:
-                        avg_change = df_audit["% Cambio"].mean()
-                        st.metric("Cambio Promedio", f"{avg_change:.1f}%")
-                    with col3:
-                        most_changed_idx = df_audit["% Cambio"].abs().idxmax()
-                        most_changed = df_audit.loc[most_changed_idx]
-                        st.metric("Mayor Cambio", f"{most_changed['% Cambio']:.1f}%")
+        audit_data = cursor.fetchall()
+        if audit_data:
+            df_audit = pd.DataFrame(
+                audit_data,
+                columns=[
+                    "ID Producto",
+                    "Producto",
+                    "Precio Anterior",
+                    "Precio Nuevo",
+                    "Fecha",
+                    "% Cambio",
+                ],
+            )
+            st.dataframe(df_audit, use_container_width=True)
+
+            if len(df_audit) > 0:
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.metric("Total de Cambios", len(audit_data))
+                with col2:
+                    avg_change = df_audit["% Cambio"].mean()
+                    st.metric("Cambio Promedio", f"{avg_change:.1f}%")
+                with col3:
+                    most_changed_idx = df_audit["% Cambio"].abs().idxmax()
+                    most_changed = df_audit.loc[most_changed_idx]
+                    st.metric("Mayor Cambio", f"{most_changed['% Cambio']:.1f}%")
 
     cursor.close()
     conn.close()
@@ -1316,7 +1305,7 @@ def handle_query_anomalous_patterns():
     conn.close()
 
 
-def show_query_selector():
+def show_query_selector(selected_query=None):
     st.markdown("## 📊 Selector de Consultas SQL")
 
     options = {
@@ -1340,10 +1329,11 @@ def show_query_selector():
         "q) Detección de patrones anómalos": "q",
     }
 
-    selected_query = st.selectbox(
-        "Selecciona una consulta:", list(options.keys()), key="query_selector"
-    )
-    selected_query = options[selected_query]
+    if not selected_query:
+        selected_query = st.selectbox(
+            "Selecciona una consulta:", list(options.keys()), key="query_selector"
+        )
+        selected_query = options[selected_query]
 
     if selected_query == "ñ":
         handle_query_trigger_auditoria()

@@ -21,7 +21,8 @@ def sidebar():
             "📊 Consultas SQL": "Consultas SQL",
             "💬 Conversaciones": "Conversaciones",
             "📚 Documentos": "Documentos",
-            # "💰 Gestor de Precios": "Gestor de Precios",
+            "👤 Análisis de Usuario": "Análisis de Usuario",
+            "💰 Gestor de Precios": "Gestor de Precios",
             "⚙️ Configuración": "Configuración",
         }
 
