@@ -13,9 +13,9 @@ class MongoDBPlantDocumentSystem:
     def __init__(
         self,
         mongo_uri="mongodb://localhost:27017/",
-        db_name="greenscape_docs",
-        username=None,
-        password=None,
+        db_name="GreenScape",
+        username="root",
+        password="mongo_pass",
         auth_source="admin",
     ):
         # If username and password are provided, create authenticated URI

@@ -1,0 +1,13 @@
+FICHA TÉCNICA - Planta 1
+
+Nombre: Planta Ejemplo 1
+Especie: Especie 1
+Familia: Familia Botánica 1
+Origen: Región 1
+Dificultad: Media
+Luz: Indirecta
+Riego: Moderado
+Temperatura: 18-24°C
+
+Descripción: Esta es una planta de ejemplo con características únicas.
+Cuidados básicos: Regar cuando el sustrato esté seco al tacto.

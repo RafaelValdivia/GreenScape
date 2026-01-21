@@ -1,0 +1,13 @@
+FICHA TÉCNICA - Planta 4
+
+Nombre: Planta Ejemplo 4
+Especie: Especie 4
+Familia: Familia Botánica 4
+Origen: Región 4
+Dificultad: Media
+Luz: Indirecta
+Riego: Moderado
+Temperatura: 18-24°C
+
+Descripción: Esta es una planta de ejemplo con características únicas.
+Cuidados básicos: Regar cuando el sustrato esté seco al tacto.

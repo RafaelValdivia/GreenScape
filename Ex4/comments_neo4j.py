@@ -16,7 +16,6 @@ class Neo4jCommentSystem:
     def _cleanup_duplicates(self):
         """Clean up duplicate nodes before setting constraints"""
         with self.driver.session() as session:
-            # Clean duplicate Usuario nodes
             session.run("""
                     MATCH (u:Usuario)
                     WITH u.id as userId, collect(u) as nodes
@@ -25,7 +24,6 @@ class Neo4jCommentSystem:
                     DETACH DELETE toDelete
                 """)
 
-            # Clean duplicate Publicacion nodes
             session.run("""
                     MATCH (p:Publicacion)
                     WITH p.id as pubId, collect(p) as nodes
@@ -34,7 +32,6 @@ class Neo4jCommentSystem:
                     DETACH DELETE toDelete
                 """)
 
-            # Clean duplicate Comentario nodes
             session.run("""
                     MATCH (c:Comentario)
                     WITH c.id as commentId, collect(c) as nodes
@@ -83,7 +80,6 @@ class Neo4jCommentSystem:
 
         connection.close()
 
-        # Use a set to track processed users
         processed_users = set()
         for usuario in usuarios:
             user_id = usuario[0]
@@ -91,7 +87,6 @@ class Neo4jCommentSystem:
                 self.add_user(user_id)
                 processed_users.add(user_id)
 
-        # Use a set to track processed publications
         processed_pubs = set()
         for publicacion in publicaciones:
             pub_id = publicacion[0]
@@ -105,12 +100,10 @@ class Neo4jCommentSystem:
             text = comentario[2]
             comment_id = comentario[3]
 
-            # Ensure user exists
             if user_id not in processed_users:
                 self.add_user(user_id)
                 processed_users.add(user_id)
 
-            # Ensure publication exists
             if publication_id not in processed_pubs:
                 self.add_publication(publication_id)
                 processed_pubs.add(publication_id)
@@ -193,10 +186,28 @@ class Neo4jCommentSystem:
             results = session.run(query)
             return [record["id"] for record in results]
 
-    def get_full_conversation(self, publication_id):
-        """Get conversation tree - ONE QUERY VERSION"""
+    def get_all_users(self):
         with self.driver.session() as session:
-            # ONE query to get all data
+            query = """
+            MATCH (u:Usuario)
+            RETURN u.id as id
+            ORDER BY u.id
+            """
+            results = session.run(query)
+            return [record["id"] for record in results]
+
+    def get_all_comments(self):
+        with self.driver.session() as session:
+            query = """
+            MATCH (c:Comentario)
+            RETURN c.id as id
+            ORDER BY c.id
+            """
+            results = session.run(query)
+            return [record["id"] for record in results]
+
+    def get_full_conversation(self, publication_id):
+        with self.driver.session() as session:
             query = """
                 MATCH (c:Comentario)-[:PERTENECE_A]->(p:Publicacion {id: $pub_id})
                 OPTIONAL MATCH (c)-[:RESPONDE_A]->(parent:Comentario)
@@ -210,16 +221,14 @@ class Neo4jCommentSystem:
                 """
 
             result = session.run(query, {"pub_id": publication_id})
-            rows = list(result)  # Get all rows at once
+            rows = list(result)
 
             if not rows:
                 return {"Publicacion": publication_id, "comments": []}
 
-            # Build tree - simple 3 steps
             comments_by_id = {}
             roots = []
 
-            # 1. Create all comment objects
             for row in rows:
                 comment_id = row["id"]
                 comments_by_id[comment_id] = {
@@ -230,21 +239,17 @@ class Neo4jCommentSystem:
                     "responses": [],
                 }
 
-            # 2. Link parents and children
             for row in rows:
                 comment_id = row["id"]
                 parent_id = row["parent_id"]
 
                 if parent_id and parent_id in comments_by_id:
-                    # Add to parent's responses
                     comments_by_id[parent_id]["responses"].append(
                         comments_by_id[comment_id]
                     )
                 elif not parent_id:
-                    # It's a root comment
                     roots.append(comments_by_id[comment_id])
 
-            # 3. Return result
             return {
                 "Publicacion": publication_id,
                 "comments": roots,
@@ -261,4 +266,35 @@ class Neo4jCommentSystem:
             record = result.single()
             if record is None or record["max_id"] is None:
                 return 1
-            return record["max_id"]
+            return record["max_id"] + 1
+
+    def create_test_conversations(self, publication_id=1, user_id=1):
+        root_comments = []
+
+        for i in range(1, 6):
+            text = f"Root comment {i}"
+            root_id = self.add_comment(
+                user_id=user_id, publication_id=publication_id, text=text
+            )
+            root_comments.append(root_id)
+
+            for j in range(1, 4):
+                reply_text = f"Reply {j} to comment {i}"
+                reply_id = self.add_comment(
+                    user_id=user_id + j,
+                    publication_id=publication_id,
+                    text=reply_text,
+                    parent_comment_id=root_id,
+                )
+
+                for k in range(1, 3):
+                    nested_text = f"Nested reply {k} to reply {j}"
+                    self.add_comment(
+                        user_id=user_id + k,
+                        publication_id=publication_id,
+                        text=nested_text,
+                        parent_comment_id=reply_id,
+                    )
+
+        total = len(root_comments) * (1 + 3 + 3 * 2)
+        return True

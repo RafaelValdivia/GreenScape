@@ -1155,43 +1155,83 @@ def handle_query_anomalous_patterns():
     st.divider()
 
     st.markdown("## ⚖️ Patrón 2: Patrones de Calificación")
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        stddev_lower = st.slider(
-            "Cota inferior de la desviación estándar",
-            min_value=0,
-            max_value=2,
-            value=0,
-            key="stddev_lowerb",
-        )
-    with col2:
-        stddev_upper = st.slider(
-            "Cota superior de la desviación estándar",
-            min_value=0,
-            max_value=2,
-            value=2,
-            key="stddev_upperb",
-        )
-    with col3:
-        total = st.number_input("Minimo de Calificiones", step=1)
+    # col1, col2, col3 = st.columns(3)
+    # with col1:
+    #     stddev_lower = st.slider(
+    #         "Cota inferior de la desviación estándar",
+    #         min_value=0,
+    #         max_value=2,
+    #         value=0,
+    #         key="stddev_lowerb",
+    #     )
+    # with col2:
+    #     stddev_upper = st.slider(
+    #         "Cota superior de la desviación estándar",
+    #         min_value=0,
+    #         max_value=2,
+    #         value=2,
+    #         key="stddev_upperb",
+    #     )
+    # with col3:
+    #     total = st.number_input("Minimo de Calificiones", step=1)
+
+    # previous_query_b = """
+    #     SELECT
+    #         IDUV AS Vendedor,
+    #         COUNT(*) AS Total_Calificaciones,
+    #         AVG(Puntuacion) AS Calificacion_Promedio,
+    #         STDDEV(Puntuacion) AS Desviacion_Calificacion
+    #     FROM Compra
+    #     WHERE Puntuacion IS NOT NULL
+    #     GROUP BY IDUV
+    #     HAVING  Total_Calificaciones >= %s AND
+    #             Desviacion_Calificacion >= %s AND
+    #             Desviacion_Calificacion <= %s
+    #     ORDER BY Desviacion_Calificacion DESC
+    # """
 
     query_b = """
-        SELECT
-            IDUV AS Vendedor,
-            COUNT(*) AS Total_Calificaciones,
-            AVG(Puntuacion) AS Calificacion_Promedio,
-            STDDEV(Puntuacion) AS Desviacion_Calificacion
-        FROM Compra
-        WHERE Puntuacion IS NOT NULL
-        GROUP BY IDUV
-        HAVING  Total_Calificaciones >= %s AND
-                Desviacion_Calificacion >= %s AND
-                Desviacion_Calificacion <= %s
-        ORDER BY Desviacion_Calificacion DESC
+    WITH ProductRatings AS (
+                SELECT
+                    IDUV,
+                    IDProd,
+                    SUM(CASE WHEN Puntuacion = 1 THEN 1 ELSE 0 END) AS count_1,
+                    SUM(CASE WHEN Puntuacion = 2 THEN 1 ELSE 0 END) AS count_2,
+                    SUM(CASE WHEN Puntuacion = 3 THEN 1 ELSE 0 END) AS count_3,
+                    SUM(CASE WHEN Puntuacion = 4 THEN 1 ELSE 0 END) AS count_4,
+                    SUM(CASE WHEN Puntuacion = 5 THEN 1 ELSE 0 END) AS count_5,
+                    COUNT(*) AS total_ratings
+                FROM Compra
+                WHERE Puntuacion IS NOT NULL
+                GROUP BY IDUV, IDProd
+                HAVING total_ratings >= 5
+            ),
+            PolarizedProducts AS (
+                SELECT
+                    IDUV,
+                    IDProd,
+                    count_1,
+                    count_5,
+                    (count_2 + count_3 + count_4) AS count_middle
+                FROM ProductRatings
+                WHERE (count_1 + count_5) > (count_2 + count_3 + count_4) * 2
+                    AND count_1 > 0
+                    AND count_5 > 0
+            )
+            SELECT
+                pp.IDUV AS Vendedor,
+                COUNT(pp.IDProd) AS Productos_Polarizados,
+                AVG(pp.count_1) AS Promedio_1_estrella,
+                AVG(pp.count_5) AS Promedio_5_estrella,
+                AVG(pp.count_middle) AS Promedio_medio
+            FROM PolarizedProducts pp
+            GROUP BY pp.IDUV
+            HAVING COUNT(pp.IDProd) >= 2
+            ORDER BY Productos_Polarizados DESC
     """
     with st.expander("Query Code"):
         st.code(query_b)
-    cursor.execute(query_b, (total, stddev_lower, stddev_upper))
+    cursor.execute(query_b)
 
     pattern2 = cursor.fetchall()
     if pattern2:
@@ -1199,12 +1239,13 @@ def handle_query_anomalous_patterns():
             pattern2,
             columns=[
                 "ID Vendedor",
-                "Total Calificaciones",
-                "Calificación Promedio",
-                "Desviación Calificación",
+                "Productos Polarizados",
+                "Promedio 1 estrella",
+                "Promedio 5 estrellas",
+                "Promedio central",
             ],
         )
-        st.dataframe(df_pattern2, use_container_width=True, height=300)
+        st.dataframe(df_pattern2, use_container_width=True)
     else:
         no_anomaly_found()
 

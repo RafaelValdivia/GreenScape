@@ -26,21 +26,40 @@ def init_neo4j_from_streamlit():
         st.error(f"❌ Error de conexión: {str(e)}")
 
 
-def display_comment_tree(conversation_data):
+def display_comment_tree(pub_id, replier_id):
+    conversation_data = st.session_state.neo4j_system.get_full_conversation(pub_id)
     if not conversation_data:
         st.info("No hay comentarios en esta publicación.")
         return
 
+    if st.button("Create Test Data for this publication"):
+        st.session_state.neo4j_system.create_test_conversations(pub_id, replier_id)
+        st.rerun()
+
     def show_comment(comment, level=0):
-        with st.container():
+        comment_id = comment["id"]
+        user_id = comment["user_id"]
+        if level > 0:
+            cols = st.columns([level, 12 - level])
+        else:
+            cols = st.columns(1)
+        with cols[-1]:
             col1, col2 = st.columns([1, 4])
             with col1:
-                st.write(f"**👤 Usuario {comment.get('user_id', 'Anónimo')}**")
+                st.write(f"**👤 Usuario {user_id}**")
             with col2:
                 st.write(comment["texto"])
                 st.caption(
-                    f"ID: {comment['id']} • Respuestas: {len(comment.get('responses', []))}"
+                    f"ID: {comment_id} • Respuestas: {len(comment.get('responses', []))}"
                 )
+                reply_text = st.text_input(
+                    "Write a Reply", key=f"reply_text {comment_id}"
+                )
+                if st.button("Responder", key=f"reply_button {comment_id}"):
+                    st.session_state.neo4j_system.add_comment(
+                        replier_id, pub_id, reply_text, parent_comment_id=comment_id
+                    )
+                    st.rerun()
 
         for reply in comment.get("responses", []):
             with st.container():
@@ -64,13 +83,10 @@ def show_conversation_manager():
     if "neo4j_system" not in st.session_state:
         init_neo4j_from_streamlit()
     all_pubs = st.session_state.neo4j_system.get_all_publications()
-    # conn = mq.connect(**mysql_conn)
-    # cursor = conn.cursor()
-    # for i in range(len(all_pubs)):
-    #     cursor.execute("SELECT Texto FROM Publicacion WHERE IDPub = %s", (all_pubs[i],))
-    #     text = cursor.fetchone()
-    #     all_pubs[i] = f"{all_pubs} - {text}"
-    current_pub = st.selectbox("Selecciona una Publicación", all_pubs)
-    display_comment_tree(
-        st.session_state.neo4j_system.get_full_conversation(current_pub)
-    )
+    all_users = st.session_state.neo4j_system.get_all_users()
+    col1, col2 = st.columns(2)
+    with col1:
+        current_pub = st.selectbox("Selecciona una Publicación", all_pubs)
+    with col2:
+        current_user = st.selectbox("Selecciona un Usuario", all_users)
+    display_comment_tree(current_pub, current_user)

@@ -1,0 +1,13 @@
+FICHA TÉCNICA - Planta 5
+
+Nombre: Planta Ejemplo 5
+Especie: Especie 5
+Familia: Familia Botánica 5
+Origen: Región 5
+Dificultad: Media
+Luz: Indirecta
+Riego: Moderado
+Temperatura: 18-24°C
+
+Descripción: Esta es una planta de ejemplo con características únicas.
+Cuidados básicos: Regar cuando el sustrato esté seco al tacto.

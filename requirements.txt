@@ -1,0 +1,6 @@
+pip install streamlit==1.28.0
+pip install pandas==2.1.0
+pip install mysql-connector-python==8.1.0
+pip install pymongo==4.5.0
+pip install neo4j==5.14.0
+pip install python-dotenv==1.0.0

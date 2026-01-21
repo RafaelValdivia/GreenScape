@@ -23,7 +23,7 @@ def sidebar():
             "📚 Documentos": "Documentos",
             "👤 Análisis de Usuario": "Análisis de Usuario",
             "💰 Gestor de Precios": "Gestor de Precios",
-            "⚙️ Configuración": "Configuración",
+            # "⚙️ Configuración": "Configuración",
         }
 
         for icon_text, page_name in page_options.items():
