@@ -623,8 +623,6 @@ def handle_query_stored_procedure():
                         cumulative_data = activity_data.cumsum()
                         st.area_chart(cumulative_data)
 
-                st.markdown(f"### ❤️ Reacciones ({granularidad})")
-
                 reaction_columns = []
                 if "reacciones_dadas_Total" in combined_df.columns:
                     reaction_columns.append("reacciones_dadas_Total")
@@ -632,6 +630,7 @@ def handle_query_stored_procedure():
                     reaction_columns.append("reacciones_recibidas_Total")
 
                 if reaction_columns:
+                    st.markdown(f"### ❤️ Reacciones ({granularidad})")
                     reaction_data = combined_df[reaction_columns].copy()
                     reaction_data.columns = [
                         col.replace("_Total", "").replace("_", " ").title()
@@ -726,111 +725,111 @@ def handle_query_stored_procedure():
                             actividad_por_dia.set_index("Dia_Semana")["Actividad_Total"]
                         )
 
-                st.markdown("### 📊 Distribución Temporal")
+            #     st.markdown("### 📊 Distribución Temporal")
 
-                if not combined_df.empty:
-                    monthly_activity = combined_df.resample("M").sum()
+            #     if not combined_df.empty:
+            #         monthly_activity = combined_df.resample("M").sum()
 
-                    summary_cols = []
-                    if "publicaciones_Cantidad" in monthly_activity.columns:
-                        summary_cols.append("publicaciones_Cantidad")
-                    if "reacciones_dadas_Total" in monthly_activity.columns:
-                        summary_cols.append("reacciones_dadas_Total")
-                    if "reacciones_recibidas_Total" in monthly_activity.columns:
-                        summary_cols.append("reacciones_recibidas_Total")
-                    if "compras_Monto" in monthly_activity.columns:
-                        summary_cols.append("compras_Monto")
-                    if "contribuciones_Cantidad" in monthly_activity.columns:
-                        summary_cols.append("contribuciones_Cantidad")
+            #         summary_cols = []
+            #         if "publicaciones_Cantidad" in monthly_activity.columns:
+            #             summary_cols.append("publicaciones_Cantidad")
+            #         if "reacciones_dadas_Total" in monthly_activity.columns:
+            #             summary_cols.append("reacciones_dadas_Total")
+            #         if "reacciones_recibidas_Total" in monthly_activity.columns:
+            #             summary_cols.append("reacciones_recibidas_Total")
+            #         if "compras_Monto" in monthly_activity.columns:
+            #             summary_cols.append("compras_Monto")
+            #         if "contribuciones_Cantidad" in monthly_activity.columns:
+            #             summary_cols.append("contribuciones_Cantidad")
 
-                    if summary_cols:
-                        monthly_summary = monthly_activity[summary_cols].copy()
-                        monthly_summary.columns = [
-                            col.split("_")[0].title() for col in monthly_summary.columns
-                        ]
+            #         if summary_cols:
+            #             monthly_summary = monthly_activity[summary_cols].copy()
+            #             monthly_summary.columns = [
+            #                 col.split("_")[0].title() for col in monthly_summary.columns
+            #             ]
 
-                        with st.expander("📅 Resumen Mensual Detallado"):
-                            st.dataframe(monthly_summary, use_container_width=True)
+            #             with st.expander("📅 Resumen Mensual Detallado"):
+            #                 st.dataframe(monthly_summary, use_container_width=True)
 
-                        st.markdown(
-                            "#### 🗓️ Calendario de Actividad (Promedio Diario por Mes)"
-                        )
+            #             st.markdown(
+            #                 "#### 🗓️ Calendario de Actividad (Promedio Diario por Mes)"
+            #             )
 
-                        days_in_month = monthly_activity.index.days_in_month
-                        heatmap_data = monthly_summary.copy()
+            #             days_in_month = monthly_activity.index.days_in_month
+            #             heatmap_data = monthly_summary.copy()
 
-                        for col in heatmap_data.columns:
-                            if col in heatmap_data.columns:  # Redundant check but safe
-                                heatmap_data[col] = (
-                                    heatmap_data[col] / days_in_month.values
-                                )
+            #             for col in heatmap_data.columns:
+            #                 if col in heatmap_data.columns:  # Redundant check but safe
+            #                     heatmap_data[col] = (
+            #                         heatmap_data[col] / days_in_month.values
+            #                     )
 
-                        fig_data = heatmap_data.T  # Transpose for better visualization
-                        try:
-                            st.dataframe(
-                                fig_data.style.background_gradient(cmap="YlOrRd"),
-                                use_container_width=True,
-                            )
-                        except:
-                            st.dataframe(fig_data, use_container_width=True)
+            #             fig_data = heatmap_data.T  # Transpose for better visualization
+            #             try:
+            #                 st.dataframe(
+            #                     fig_data.style.background_gradient(cmap="YlOrRd"),
+            #                     use_container_width=True,
+            #                 )
+            #             except:
+            #                 st.dataframe(fig_data, use_container_width=True)
 
-                st.markdown("### 📶 Intensidad de Actividad")
+            #     st.markdown("### 📶 Intensidad de Actividad")
 
-                if not combined_df.empty:
-                    all_activity_cols = [
-                        col
-                        for col in combined_df.columns
-                        if "Cantidad" in col or "Total" in col or "Transacciones" in col
-                    ]
-                    if all_activity_cols:
-                        combined_df["Actividad_Total_Diaria"] = combined_df[
-                            all_activity_cols
-                        ].sum(axis=1)
+            #     if not combined_df.empty:
+            #         all_activity_cols = [
+            #             col
+            #             for col in combined_df.columns
+            #             if "Cantidad" in col or "Total" in col or "Transacciones" in col
+            #         ]
+            #         if all_activity_cols:
+            #             combined_df["Actividad_Total_Diaria"] = combined_df[
+            #                 all_activity_cols
+            #             ].sum(axis=1)
 
-                        combined_df["Media_Movil_7_Dias"] = (
-                            combined_df["Actividad_Total_Diaria"]
-                            .rolling(window=7)
-                            .mean()
-                        )
+            #             combined_df["Media_Movil_7_Dias"] = (
+            #                 combined_df["Actividad_Total_Diaria"]
+            #                 .rolling(window=7)
+            #                 .mean()
+            #             )
 
-                        rolling_data = combined_df[
-                            ["Actividad_Total_Diaria", "Media_Movil_7_Dias"]
-                        ].dropna()
-                        rolling_data.columns = [
-                            "Actividad Diaria",
-                            "Media Móvil (7 días)",
-                        ]
+            #             rolling_data = combined_df[
+            #                 ["Actividad_Total_Diaria", "Media_Movil_7_Dias"]
+            #             ].dropna()
+            #             rolling_data.columns = [
+            #                 "Actividad Diaria",
+            #                 "Media Móvil (7 días)",
+            #             ]
 
-                        st.line_chart(rolling_data)
+            #             st.line_chart(rolling_data)
 
-                        col1, col2, col3 = st.columns(3)
-                        with col1:
-                            max_activity = rolling_data["Actividad Diaria"].max()
-                            st.metric(
-                                "📈 Máxima Actividad Diaria", f"{max_activity:.0f}"
-                            )
-                        with col2:
-                            avg_activity = rolling_data["Actividad Diaria"].mean()
-                            st.metric(
-                                "📊 Actividad Promedio Diaria", f"{avg_activity:.1f}"
-                            )
-                        with col3:
-                            active_days = (rolling_data["Actividad Diaria"] > 0).sum()
-                            total_days = len(rolling_data)
-                            percentage = (
-                                (active_days / total_days * 100)
-                                if total_days > 0
-                                else 0
-                            )
-                            st.metric(
-                                "📅 Días Activos",
-                                f"{active_days}/{total_days} ({percentage:.1f}%)",
-                            )
+            #             col1, col2, col3 = st.columns(3)
+            #             with col1:
+            #                 max_activity = rolling_data["Actividad Diaria"].max()
+            #                 st.metric(
+            #                     "📈 Máxima Actividad Diaria", f"{max_activity:.0f}"
+            #                 )
+            #             with col2:
+            #                 avg_activity = rolling_data["Actividad Diaria"].mean()
+            #                 st.metric(
+            #                     "📊 Actividad Promedio Diaria", f"{avg_activity:.1f}"
+            #                 )
+            #             with col3:
+            #                 active_days = (rolling_data["Actividad Diaria"] > 0).sum()
+            #                 total_days = len(rolling_data)
+            #                 percentage = (
+            #                     (active_days / total_days * 100)
+            #                     if total_days > 0
+            #                     else 0
+            #                 )
+            #                 st.metric(
+            #                     "📅 Días Activos",
+            #                     f"{active_days}/{total_days} ({percentage:.1f}%)",
+            #                 )
 
-            else:
-                st.warning(
-                    "⚠️ No se encontraron datos temporales para este usuario en el período especificado."
-                )
+            # else:
+            #     st.warning(
+            #         "⚠️ No se encontraron datos temporales para este usuario en el período especificado."
+            #     )
 
         except Exception as e:
             st.error(f"❌ Error en el análisis: {str(e)[:200]}")
