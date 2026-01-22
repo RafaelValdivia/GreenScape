@@ -17,11 +17,9 @@ def show_document_system():
         )
         return
 
-    # Create directories if they don't exist
     if not os.path.exists("./greenscape_documents"):
         os.makedirs("./greenscape_documents")
 
-    # Header with buttons
     col1, col2 = st.columns([3, 1])
 
     with col1:
@@ -35,7 +33,6 @@ def show_document_system():
         if st.button("🔄 Actualizar"):
             st.rerun()
 
-    # Get all plant IDs
     with open("connection.json", "r") as file:
         mysql_connection = json.load(file)["mysql"]
         conn = mq.connect(**mysql_connection)
@@ -45,7 +42,6 @@ def show_document_system():
     plant_ids = [id[0] for id in plant_ids]
     conn.close()
 
-    # Plant selector
     selected_plant = st.selectbox(
         "🌱 **Selecciona una planta:**",
         options=plant_ids,
@@ -55,13 +51,11 @@ def show_document_system():
     if not selected_plant:
         return
 
-    # Get documents for selected plant
     documents = doc_system.get_plant_documents(selected_plant)
 
     if not documents:
         st.info(f"ℹ️ La Planta #{selected_plant} no tiene documentos asociados.")
 
-        # Upload section for empty plant
         st.divider()
         st.subheader("📤 Agregar primer documento a esta planta")
 
@@ -86,7 +80,6 @@ def show_document_system():
                     st.rerun()
         return
 
-    # Display statistics
     col1, col2, col3 = st.columns(3)
 
     with col1:
@@ -101,14 +94,12 @@ def show_document_system():
 
     st.divider()
 
-    # Display main document
     if documents["main_document"]:
         main = documents["main_document"]
 
         with st.expander(
             f"📘 **{main['filename']}** - Documento Principal", expanded=True
         ):
-            # Document info
             col1, col2 = st.columns(2)
             with col1:
                 st.write(f"**Tipo:** {main['type']}")
@@ -120,7 +111,6 @@ def show_document_system():
                     created_date = created_date.strftime("%Y-%m-%d %H:%M")
                 st.write(f"**Creado:** {created_date}")
 
-            # Handle different file types
             file_path = main["filepath"]
 
             if main["mime_type"].startswith("text/") or main["filename"].endswith(
@@ -144,7 +134,6 @@ def show_document_system():
                 except Exception as e:
                     st.info(f"⚠️ No se pudo cargar la imagen: {e}")
 
-                    # Provide download as fallback
                     try:
                         with open(file_path, "rb") as f:
                             file_bytes = f.read()
@@ -163,7 +152,6 @@ def show_document_system():
                     with open(file_path, "rb") as f:
                         pdf_bytes = f.read()
 
-                    # Provide download button
                     st.download_button(
                         label="📥 Descargar PDF",
                         data=pdf_bytes,
@@ -172,7 +160,6 @@ def show_document_system():
                         key=f"download_main_pdf_{main['id']}",
                     )
 
-                    # Try to show PDF preview (simplified)
                     st.info(
                         "💡 Vista previa de PDF no disponible directamente. Descarga el archivo para verlo."
                     )
@@ -181,7 +168,6 @@ def show_document_system():
                     st.error(f"❌ Error con el archivo PDF: {e}")
 
             else:
-                # For other file types, provide download
                 try:
                     with open(file_path, "rb") as f:
                         file_bytes = f.read()
@@ -198,13 +184,11 @@ def show_document_system():
                 except Exception as e:
                     st.error(f"❌ Error al acceder al archivo: {e}")
 
-    # Display secondary documents
     if documents["secondary_documents"]:
         st.subheader("📄 Documentos Secundarios")
 
         for i, doc in enumerate(documents["secondary_documents"]):
             with st.expander(f"**{doc['filename']}** - {doc['type']}", expanded=False):
-                # Document info
                 col1, col2 = st.columns(2)
                 with col1:
                     st.write(f"**Tipo:** {doc['type']}")
@@ -216,7 +200,6 @@ def show_document_system():
                         created_date = created_date.strftime("%Y-%m-%d")
                     st.write(f"**Creado:** {created_date}")
 
-                # Handle different file types
                 file_path = doc["filepath"]
 
                 if doc["mime_type"].startswith("text/") or doc["filename"].endswith(
@@ -242,7 +225,6 @@ def show_document_system():
                     except Exception as e:
                         st.info(f"No se puede mostrar la imagen: {e}")
 
-                        # Provide download as fallback
                         try:
                             with open(file_path, "rb") as f:
                                 file_bytes = f.read()
@@ -257,7 +239,6 @@ def show_document_system():
                             st.error("No se puede acceder al archivo")
 
                 else:
-                    # For other file types, provide download
                     try:
                         with open(file_path, "rb") as f:
                             file_bytes = f.read()
@@ -280,25 +261,20 @@ def show_document_system():
                     except Exception as e:
                         st.error(f"Error al acceder al archivo: {e}")
 
-    # Upload new document section
     st.divider()
     st.subheader("📤 Agregar nuevo documento")
 
-    upload_col1, upload_col2 = st.columns(2)
+    upload_type = st.radio(
+        "Tipo de documento:",
+        ["Secundario", "Principal"],
+        help="Solo puede haber un documento principal por planta",
+    )
 
-    with upload_col1:
-        upload_type = st.radio(
-            "Tipo de documento:",
-            ["Secundario", "Principal"],
-            help="Solo puede haber un documento principal por planta",
-        )
-
-    with upload_col2:
-        uploaded_file = st.file_uploader(
-            "Selecciona un archivo:",
-            type=["txt", "pdf", "jpg", "png", "jpeg", "docx", "xlsx", "csv"],
-            key="new_upload",
-        )
+    uploaded_file = st.file_uploader(
+        "Selecciona un archivo:",
+        type=["txt", "pdf", "jpg", "png", "jpeg", "docx", "xlsx", "csv"],
+        key="new_upload",
+    )
 
     if uploaded_file:
         st.write(f"📄 **Archivo seleccionado:** {uploaded_file.name}")
@@ -331,7 +307,3 @@ def show_document_system():
 
                 except Exception as e:
                     st.error(f"❌ Error al subir el documento: {str(e)}")
-
-
-if __name__ == "__main__":
-    show_document_system()

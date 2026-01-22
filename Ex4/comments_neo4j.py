@@ -138,21 +138,19 @@ class Neo4jCommentSystem:
         self, user_id, publication_id, text, comment_id=None, parent_comment_id=None
     ):
         with self.driver.session() as session:
-            if not comment_id:
+            if comment_id is None:
                 comment_id = self._get_next_comment_id()
 
             query = """
-                MERGE (u:Usuario {id: $user_id})
-                MERGE (p:Publicacion {id: $publication_id})
-                CREATE (c:Comentario {
-                    id: $comment_id,
-                    texto: $text,
-                    fechaCreacion: datetime()
-                })
-                CREATE (u)-[:ESCRIBIO]->(c)
-                CREATE (c)-[:PERTENECE_A]->(p)
-                RETURN c.id as comment_id
-                """
+            MERGE (u:Usuario {id: $user_id})
+            MERGE (p:Publicacion {id: $publication_id})
+            MERGE (c:Comentario {id: $comment_id})
+            ON CREATE SET c.texto = $text, c.fechaCreacion = datetime()
+            ON MATCH SET c.texto = $text
+            MERGE (u)-[:ESCRIBIO]->(c)
+            MERGE (c)-[:PERTENECE_A]->(p)
+            RETURN c.id as comment_id
+            """
 
             params = {
                 "user_id": user_id,

@@ -1,6 +1,23 @@
 import streamlit as st
 
 
+def show_home():
+    st.markdown(
+        "<h1 style='text-align: center;'>🌿 Greenscape</h1>", unsafe_allow_html=True
+    )
+    st.markdown(
+        "<p style='text-align: center; color: #5a8c4e; font-size: 1.2em;'>Where plant lovers grow together</p>",
+        unsafe_allow_html=True,
+    )
+
+    st.divider()
+
+    st.markdown(
+        "<p style='text-align: center; color: #5a8c4e; font-size: 1em;'>Utilice los botones en el sidebar para interactuar con las distintas funcionalidades de la web app</p>",
+        unsafe_allow_html=True,
+    )
+
+
 def sidebar():
     with st.sidebar:
         st.markdown(
@@ -23,7 +40,6 @@ def sidebar():
             "📚 Documentos": "Documentos",
             "👤 Análisis de Usuario": "Análisis de Usuario",
             "💰 Gestor de Precios": "Gestor de Precios",
-            # "⚙️ Configuración": "Configuración",
         }
 
         for icon_text, page_name in page_options.items():
@@ -44,7 +60,3 @@ def sidebar():
 
         if st.button("🔄 Recargar Página", use_container_width=True):
             st.rerun()
-
-
-def show_home():
-    pass

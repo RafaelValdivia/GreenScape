@@ -8,24 +8,28 @@ GreenScape es una plataforma integral para la gestión y análisis de datos rela
 ```
 GreenScape/
 ├── Ex2/                          # MERX de la Base de Datos
-├── Ex3/                          # Módulo 3 - Consultas básicas en MySQL
-├── Ex4/                          # Módulo 4 - Sistema de comentarios
+├── Ex3/                          # Consultas básicas en MySQL
+│   └── mysql_queries.py          # Diccionario de consultas SQL
+├── Ex4/                          # Sistema de comentarios
 │   ├── comments_mysql.py         # Sistema de comentarios en MySQL
 │   └── comments_neo4j.py         # Sistema de comentarios en Neo4j
-├── Ex5/                          # Módulo 5 - Gestión de documentos
+├── Ex5/                          # Gestión de documentos
 │   ├── doc_mongodb.py            # Sistema de documentos en MongoDB
 │   └── doc_mysql.py              # Sistema de documentos en MySQL
-├── Ex6/                          # Módulo 6 - Interfaz web
+├── Ex6/                          # Interfaz web
 │   ├── st_app.py                 # Aplicación principal Streamlit
 │   ├── st_sidebar.py             # Barra lateral de navegación
 │   ├── st_document.py            # Gestor de documentos (MongoDB)
 │   ├── st_comments.py            # Gestor de comentarios (Neo4j)
 │   ├── st_queries.py             # Consultas SQL y análisis
-│   └── mysql_queries.py          # Diccionario de consultas SQL
+├── greenscape_documents/         # Almacenamiento de documentos (generado)
 ├── docker-compose.yml            # Configuración de contenedores Docker
 ├── Dockerfile                    # Configuración de la imagen Docker
 ├── connection.json               # Configuración de conexiones a BD
-├── greenscape_documents/         # Almacenamiento de documentos (generado)
+├── Informe.md                    # Explicación de las desiciones tomadas en el proyecto
+├── init.sql                      # Inicializador de todas las tablas de la base de datos en MySQL
+├── LICENSE                       # Información de la licencia del Proyecto 
+├── Orientación ... .pdf          # Orientación del proyecto dada por nuestro querido profesor
 ├── requirements.txt              # Dependencias de Python
 └── README.md                     # Este archivo
 ```

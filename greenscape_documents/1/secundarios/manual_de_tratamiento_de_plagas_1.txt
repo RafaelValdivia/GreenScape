@@ -1,10 +1,10 @@
 MANUAL DE TRATAMIENTO DE PLAGAS
 Planta: #1
-Fecha de Emisión: 2026-01-20
+Fecha de Emisión: 2026-01-21
 
 Contenido:
 Este documento proporciona información específica sobre manual de tratamiento de plagas.
 Incluye recomendaciones y procedimientos para el cuidado óptimo de la planta.
 
 Estado: Válido
-Válido hasta: 2027-01-20
+Válido hasta: 2027-01-21

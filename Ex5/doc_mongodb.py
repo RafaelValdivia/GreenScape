@@ -18,23 +18,17 @@ class MongoDBPlantDocumentSystem:
         password="mongo_pass",
         auth_source="admin",
     ):
-        # If username and password are provided, create authenticated URI
         if username and password:
-            # URL encode the username and password
             username = quote_plus(username)
             password = quote_plus(password)
-            # Construct authenticated URI
             if "@" in mongo_uri:
-                # URI already has credentials, replace them
                 parts = mongo_uri.split("@", 1)
                 mongo_uri = f"mongodb://{username}:{password}@{parts[1]}"
             else:
-                # Add credentials to URI
                 mongo_uri = mongo_uri.replace(
                     "mongodb://", f"mongodb://{username}:{password}@"
                 )
 
-            # Add authSource parameter
             if "?" in mongo_uri:
                 mongo_uri += f"&authSource={auth_source}"
             else:
@@ -161,7 +155,6 @@ class MongoDBPlantDocumentSystem:
         if not main_doc:
             return None
 
-        # Find secondary documents for this plant
         secondary_docs = list(
             self.documents.find({"plant_id": plant_id, "es_principal": False})
         )
@@ -189,7 +182,6 @@ class MongoDBPlantDocumentSystem:
         for plant_id in range(1, 6):
             print(f"Creating documents for plant {plant_id}...")
 
-            # Create main document
             main_content = f"""FICHA TÉCNICA - Planta {plant_id}
 
 Nombre: Planta Ejemplo {plant_id}
@@ -215,7 +207,6 @@ Cuidados básicos: Regar cuando el sustrato esté seco al tacto."""
                 },
             )
 
-            # Create 3 secondary documents
             secondary_types = [
                 "Certificado Fitosanitario",
                 "Guía de Riego Estacional",

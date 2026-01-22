@@ -284,60 +284,6 @@ class PlantDocumentSystem:
         connection.close()
         return plant_ids
 
-    def create_test_data(self):
-        for plant_id in range(1, 6):
-            main_content = f"""FICHA TÉCNICA - Planta {plant_id}
-
-Nombre: Planta Ejemplo {plant_id}
-Especie: Especie {plant_id}
-Familia: Familia Botánica {plant_id}
-Origen: Región {plant_id}
-Dificultad: Media
-Luz: Indirecta
-Riego: Moderado
-Temperatura: 18-24°C
-
-Descripción: Esta es una planta de ejemplo con características únicas.
-Cuidados básicos: Regar cuando el sustrato esté seco al tacto."""
-
-            self.insert_main_document(
-                plant_id=plant_id,
-                content=main_content,
-                filename=f"ficha_tecnica_{plant_id}.txt",
-                plant_data={
-                    "especie": f"Especie_{plant_id}",
-                    "dificultad": "Media",
-                    "origen": f"Región {plant_id}",
-                },
-            )
-
-            secondary_types = [
-                "Certificado Fitosanitario",
-                "Guía de Riego Estacional",
-                "Manual de Tratamiento de Plagas",
-            ]
-
-            for doc_type in secondary_types:
-                sec_content = f"""{doc_type.upper()}
-Planta: #{plant_id}
-Fecha de Emisión: {datetime.now().strftime("%Y-%m-%d")}
-
-Contenido:
-Este documento proporciona información específica sobre {doc_type.lower()}.
-Incluye recomendaciones y procedimientos para el cuidado óptimo de la planta.
-
-Estado: Válido
-Válido hasta: {(datetime.now().replace(year=datetime.now().year + 1)).strftime("%Y-%m-%d")}"""
-
-                self.insert_secondary_document(
-                    plant_id=plant_id,
-                    tipo_documento=doc_type,
-                    content=sec_content,
-                    filename=f"{doc_type.lower().replace(' ', '_')}_{plant_id}.txt",
-                )
-
-        return True
-
     def get_document_content(self, doc_id):
         connection = self.get_db_connection()
         cursor = connection.cursor(dictionary=True)
