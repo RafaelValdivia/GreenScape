@@ -235,21 +235,17 @@ def handle_query_stored_procedure():
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # Get list of users for dropdown
     cursor.execute("SELECT IDU, Nombre FROM Usuario ORDER BY Nombre")
     usuarios = cursor.fetchall()
 
-    # Create enhanced analysis function with time series data
     def analizar_usuario_con_series_temporales(user_id, fecha_inicio, fecha_fin):
         """Enhanced analysis function that includes time series data"""
         results = {}
         time_series_data = {}
 
-        # Convert dates to string for SQL queries
         fecha_inicio_str = fecha_inicio.strftime("%Y-%m-%d")
         fecha_fin_str = fecha_fin.strftime("%Y-%m-%d")
 
-        # 1. Time series: Publications over time (using reaction dates as proxy)
         try:
             cursor.execute(
                 """
@@ -271,7 +267,6 @@ def handle_query_stored_procedure():
         except Exception as e:
             st.warning(f"No se pudieron obtener datos de publicaciones: {str(e)[:100]}")
 
-        # 2. Time series: Reactions given over time
         try:
             cursor.execute(
                 """
@@ -296,7 +291,6 @@ def handle_query_stored_procedure():
                 f"No se pudieron obtener datos de reacciones dadas: {str(e)[:100]}"
             )
 
-        # 3. Time series: Reactions received over time
         try:
             cursor.execute(
                 """
@@ -322,7 +316,6 @@ def handle_query_stored_procedure():
                 f"No se pudieron obtener datos de reacciones recibidas: {str(e)[:100]}"
             )
 
-        # 4. Time series: Comments over time (using reaction dates as proxy)
         try:
             cursor.execute(
                 """
@@ -344,7 +337,6 @@ def handle_query_stored_procedure():
         except Exception as e:
             st.warning(f"No se pudieron obtener datos de comentarios: {str(e)[:100]}")
 
-        # 5. Time series: Purchases over time
         try:
             cursor.execute(
                 """
@@ -367,7 +359,6 @@ def handle_query_stored_procedure():
         except Exception as e:
             st.warning(f"No se pudieron obtener datos de compras: {str(e)[:100]}")
 
-        # 6. Time series: Contributions over time
         try:
             cursor.execute(
                 """
@@ -390,7 +381,6 @@ def handle_query_stored_procedure():
                 f"No se pudieron obtener datos de contribuciones: {str(e)[:100]}"
             )
 
-        # Summary statistics
         results["Total_Publicaciones"] = sum(
             [p[1] for p in time_series_data.get("publicaciones", [])]
         )
@@ -413,7 +403,6 @@ def handle_query_stored_procedure():
             [c[1] for c in time_series_data.get("contribuciones", [])]
         )
 
-        # Planta más comprada
         try:
             cursor.execute(
                 """
@@ -434,7 +423,6 @@ def handle_query_stored_procedure():
         except:
             results["Planta_Mas_Comprada"] = None
 
-        # Planta más contribuida
         try:
             cursor.execute(
                 """
@@ -455,10 +443,8 @@ def handle_query_stored_procedure():
         except:
             results["Planta_Mas_Contribuida"] = None
 
-        # Create combined time series DataFrame
         ts_dataframes = {}
 
-        # Convert each time series to DataFrame
         for key, data in time_series_data.items():
             if data:
                 try:
@@ -503,7 +489,6 @@ def handle_query_stored_procedure():
             "Fecha Fin:", value=pd.to_datetime("2024-12-31"), key="fecha_fin"
         )
 
-    # Add time granularity selector
     granularidad = st.selectbox(
         "Granularidad del análisis temporal:",
         ["Diario", "Semanal", "Mensual"],
@@ -518,7 +503,6 @@ def handle_query_stored_procedure():
 
             st.success("✅ Análisis completado exitosamente")
 
-            # Display summary metrics
             col1, col2, col3 = st.columns(3)
 
             with col1:
@@ -534,7 +518,6 @@ def handle_query_stored_procedure():
             with col3:
                 st.metric("🌱 Contribuciones", resultados["Total_Contribuciones"])
 
-                # Get plant names for IDs
                 if resultados["Planta_Mas_Comprada"]:
                     try:
                         cursor.execute(
@@ -560,7 +543,6 @@ def handle_query_stored_procedure():
                     except:
                         pass
 
-            # Create summary dataframe
             st.markdown("### 📋 Resumen de Actividad")
             df_summary = pd.DataFrame(
                 {
@@ -586,29 +568,24 @@ def handle_query_stored_procedure():
             )
             st.dataframe(df_summary, use_container_width=True)
 
-            # TIME SERIES VISUALIZATIONS
             if series_temporales:
                 st.markdown("## 📈 Análisis Temporal de Actividad")
 
-                # Create combined time series DataFrame for plotting
                 all_dates = pd.date_range(start=fecha_inicio, end=fecha_fin, freq="D")
                 combined_df = pd.DataFrame(index=all_dates)
 
-                # Add each activity type
                 for key, df in series_temporales.items():
                     if not df.empty:
                         try:
-                            # Set index and resample based on granularity
                             df_temp = df.set_index("Fecha")
 
                             if granularidad == "Semanal":
                                 df_resampled = df_temp.resample("W").sum()
                             elif granularidad == "Mensual":
                                 df_resampled = df_temp.resample("M").sum()
-                            else:  # Diario
+                            else:
                                 df_resampled = df_temp
 
-                            # Merge with combined DataFrame
                             for col in df_resampled.columns:
                                 combined_df = combined_df.join(
                                     df_resampled[col].rename(f"{key}_{col}"), how="left"
@@ -616,13 +593,10 @@ def handle_query_stored_procedure():
                         except Exception as e:
                             st.warning(f"Error procesando {key}: {str(e)[:100]}")
 
-                # Fill NaN with 0
                 combined_df = combined_df.fillna(0)
 
-                # Plot 1: Activity timeline (main activities)
                 st.markdown(f"### 📊 Línea de Tiempo de Actividad ({granularidad})")
 
-                # Prepare data for main activity plot
                 activity_columns = []
                 if "publicaciones_Cantidad" in combined_df.columns:
                     activity_columns.append("publicaciones_Cantidad")
@@ -646,11 +620,9 @@ def handle_query_stored_procedure():
 
                     with col2:
                         st.markdown("#### 📊 Distribución Acumulada")
-                        # Calculate cumulative sum
                         cumulative_data = activity_data.cumsum()
                         st.area_chart(cumulative_data)
 
-                # Plot 2: Reactions timeline
                 st.markdown(f"### ❤️ Reacciones ({granularidad})")
 
                 reaction_columns = []
@@ -673,7 +645,6 @@ def handle_query_stored_procedure():
                         st.line_chart(reaction_data)
 
                     with col2:
-                        # Positive vs Negative reactions
                         if (
                             "reacciones_dadas_Positivas" in combined_df.columns
                             and "reacciones_dadas_Negativas" in combined_df.columns
@@ -690,7 +661,6 @@ def handle_query_stored_procedure():
                             pos_neg_data.columns = ["Positivas", "Negativas"]
                             st.bar_chart(pos_neg_data)
 
-                # Plot 3: Purchases timeline
                 if "compras_Monto" in combined_df.columns:
                     st.markdown(f"### 🛍️ Compras ({granularidad})")
 
@@ -709,16 +679,13 @@ def handle_query_stored_procedure():
                             units_data.columns = ["Unidades"]
                             st.bar_chart(units_data)
 
-                # Plot 4: Heatmap of activity by day of week
                 st.markdown("### 🔥 Patrones de Actividad Semanal")
 
-                # Create a DataFrame with day of week information
                 if not combined_df.empty:
                     combined_df_copy = combined_df.copy()
                     combined_df_copy["Dia_Semana"] = combined_df_copy.index.day_name()
                     combined_df_copy["Numero_Dia"] = combined_df_copy.index.dayofweek
 
-                    # Map Spanish day names
                     dia_map = {
                         "Monday": "Lunes",
                         "Tuesday": "Martes",
@@ -732,7 +699,6 @@ def handle_query_stored_procedure():
                         dia_map
                     )
 
-                    # Calculate total activity per day
                     activity_cols = []
                     for col in combined_df_copy.columns:
                         if (
@@ -747,7 +713,6 @@ def handle_query_stored_procedure():
                             activity_cols
                         ].sum(axis=1)
 
-                        # Group by day of week
                         actividad_por_dia = (
                             combined_df_copy.groupby(["Numero_Dia", "Dia_Semana"])[
                                 "Actividad_Total"
@@ -757,19 +722,15 @@ def handle_query_stored_procedure():
                         )
                         actividad_por_dia = actividad_por_dia.sort_values("Numero_Dia")
 
-                        # Display as bar chart
                         st.bar_chart(
                             actividad_por_dia.set_index("Dia_Semana")["Actividad_Total"]
                         )
 
-                # Plot 5: Activity distribution by time period
                 st.markdown("### 📊 Distribución Temporal")
 
-                # Calculate monthly activity
                 if not combined_df.empty:
                     monthly_activity = combined_df.resample("M").sum()
 
-                    # Select relevant columns for monthly summary
                     summary_cols = []
                     if "publicaciones_Cantidad" in monthly_activity.columns:
                         summary_cols.append("publicaciones_Cantidad")
@@ -788,27 +749,22 @@ def handle_query_stored_procedure():
                             col.split("_")[0].title() for col in monthly_summary.columns
                         ]
 
-                        # Display as expanded dataframe
                         with st.expander("📅 Resumen Mensual Detallado"):
                             st.dataframe(monthly_summary, use_container_width=True)
 
-                        # Display heatmap-like visualization
                         st.markdown(
                             "#### 🗓️ Calendario de Actividad (Promedio Diario por Mes)"
                         )
 
-                        # Calculate average daily activity per month
                         days_in_month = monthly_activity.index.days_in_month
                         heatmap_data = monthly_summary.copy()
 
-                        # Divide each column by days in month, only for columns that exist
                         for col in heatmap_data.columns:
                             if col in heatmap_data.columns:  # Redundant check but safe
                                 heatmap_data[col] = (
                                     heatmap_data[col] / days_in_month.values
                                 )
 
-                        # Create a heatmap-style visualization
                         fig_data = heatmap_data.T  # Transpose for better visualization
                         try:
                             st.dataframe(
@@ -818,12 +774,9 @@ def handle_query_stored_procedure():
                         except:
                             st.dataframe(fig_data, use_container_width=True)
 
-                # Additional visualization: Activity intensity over time
                 st.markdown("### 📶 Intensidad de Actividad")
 
-                # Calculate rolling average of total activity
                 if not combined_df.empty:
-                    # Sum all activity columns
                     all_activity_cols = [
                         col
                         for col in combined_df.columns
@@ -834,14 +787,12 @@ def handle_query_stored_procedure():
                             all_activity_cols
                         ].sum(axis=1)
 
-                        # Calculate 7-day rolling average
                         combined_df["Media_Movil_7_Dias"] = (
                             combined_df["Actividad_Total_Diaria"]
                             .rolling(window=7)
                             .mean()
                         )
 
-                        # Plot rolling average
                         rolling_data = combined_df[
                             ["Actividad_Total_Diaria", "Media_Movil_7_Dias"]
                         ].dropna()
@@ -852,7 +803,6 @@ def handle_query_stored_procedure():
 
                         st.line_chart(rolling_data)
 
-                        # Display activity statistics
                         col1, col2, col3 = st.columns(3)
                         with col1:
                             max_activity = rolling_data["Actividad Diaria"].max()
